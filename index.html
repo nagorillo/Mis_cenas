@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cenas Ligeras</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1917;
+    --surface2: #222120;
+    --border: #2e2d2b;
+    --accent: #e8a045;
+    --accent2: #c45c3a;
+    --text: #f0ede8;
+    --muted: #7a7670;
+    --green: #6aaa6a;
+    --red: #c45c3a;
+    --card-radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 30px;
+  }
+  .header {
+    padding: 28px 20px 16px;
+    background: linear-gradient(180deg, #1a1410 0%, transparent 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .app-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #f0ede8, #e8a045);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .app-subtitle { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
+  .date-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+  }
+  .date-badge strong { color: var(--accent); display: block; font-size: 0.85rem; }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 12px 20px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex: 1;
+    min-width: 60px;
+    padding: 10px 4px;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-icon { font-size: 1.1rem; display: block; margin-bottom: 3px; }
+  .section { display: none; padding: 20px; }
+  .section.active { display: block; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--card-radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 14px;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .btn {
+    background: var(--accent);
+    color: #0f0e0c;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #d4903a; transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-outline:hover { background: rgba(232,160,69,0.1); transform: none; }
+  .btn-full { width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; }
+
+  .ingredient-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .ingredient-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .ingredient-tag .remove-btn {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.9rem;
+    transition: color 0.15s;
+  }
+  .ingredient-tag .remove-btn:hover { color: var(--red); }
+  .add-row { display: flex; gap: 8px; }
+  .add-row input, .form-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .add-row input:focus, .form-input:focus { border-color: var(--accent); }
+  .add-row input::placeholder, .form-input::placeholder { color: var(--muted); }
+
+  .day-block { margin-bottom: 16px; }
+  .day-header-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border-radius: 10px 10px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .day-name-menu {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--accent);
+    font-family: 'Playfair Display', serif;
+  }
+  .day-body {
+    border: 1px solid var(--border);
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+  }
+  .plato-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .plato-row:last-child { border-bottom: none; }
+  .plato-label {
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 22px;
+    font-weight: 600;
+  }
+  .plato-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    outline: none;
+    padding: 2px 0;
+  }
+  .plato-input::placeholder { color: var(--border); }
+
+  .today-day-selector {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .today-day-selector::-webkit-scrollbar { display: none; }
+  .day-pill {
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .day-pill.active {
+    background: rgba(232,160,69,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .plato-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+  }
+  .plato-option.selected {
+    border-color: var(--accent2);
+    background: rgba(196,92,58,0.12);
+    color: #e07a5a;
+  }
+  .plato-option .check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+  }
+  .plato-option.selected .check {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: white;
+  }
+  .plato-group-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 12px 0 8px;
+    font-weight: 600;
+  }
+  .empty-menu-msg {
+    text-align: center;
+    padding: 30px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  .suggestion-box {
+    background: linear-gradient(135deg, rgba(232,160,69,0.08), rgba(196,92,58,0.08));
+    border: 1px solid rgba(232,160,69,0.3);
+    border-radius: var(--card-radius);
+    padding: 20px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .suggestion-box::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(232,160,69,0.15), transparent);
+    border-radius: 50%;
+  }
+  .suggestion-emoji { font-size: 2.5rem; margin-bottom: 10px; display: block; }
+  .suggestion-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .suggestion-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+  .stags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .stag {
+    background: rgba(232,160,69,0.12);
+    color: var(--accent);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  .stag.avoid { background: rgba(196,92,58,0.12); color: #e07a5a; }
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  .history-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-date {
+    min-width: 44px;
+    text-align: center;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 6px;
+  }
+  .history-date .hday { font-size: 1.1rem; font-weight: 700; color: var(--accent); font-family: 'Playfair Display', serif; }
+  .history-date .hmon { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; }
+  .history-content { flex: 1; }
+  .history-meal { font-size: 0.88rem; font-weight: 500; margin-bottom: 3px; }
+  .history-lunch { font-size: 0.75rem; color: var(--muted); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+  }
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; display: block; }
+  .empty-state p { font-size: 0.85rem; line-height: 1.6; }
+
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--accent);
+    color: #0f0e0c;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: transform 0.3s ease;
+    z-index: 100;
+    white-space: nowrap;
+    max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); color: white; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="app-title">Cenas<br>Ligeras</div>
+      <div class="app-subtitle">Asistente de cenas personalizadas</div>
+    </div>
+    <div class="date-badge">
+      <strong id="today-day"></strong>
+      <span id="today-date"></span>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <div class="tab active" onclick="showTab('despensa',this)">
+      <span class="tab-icon">🥫</span>Despensa
+    </div>
+    <div class="tab" onclick="showTab('menu',this)">
+      <span class="tab-icon">📋</span>Menú
+    </div>
+    <div class="tab" onclick="showTab('hoy',this)">
+      <span class="tab-icon">☀️</span>Hoy comí
+    </div>
+    <div class="tab" onclick="showTab('cena',this)">
+      <span class="tab-icon">🌙</span>Mi cena
+    </div>
+    <div class="tab" onclick="showTab('historial',this)">
+      <span class="tab-icon">📅</span>Historial
+    </div>
+  </div>
+</div>
+
+<div class="section active" id="tab-despensa">
+  <div class="card">
+    <div class="card-title">🥫 Mi despensa</div>
+    <div class="section-label">Ingredientes disponibles</div>
+    <div class="ingredient-grid" id="ingredient-grid"></div>
+    <div class="add-row">
+      <input type="text" id="new-ingredient" placeholder="Añadir ingrediente..." onkeydown="if(event.key==='Enter')addIngredient()">
+      <button class="btn" onclick="addIngredient()">+ Añadir</button>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="tab-menu">
+  <div class="card">
+    <div class="card-title">📋 Menú de la semana</div>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.5">
+      Introduce el menú de la academia cada lunes. Rellena los platos disponibles cada día.
+    </p>
+    <div id="menu-days"></div>
+    <button class="btn btn-full" onclick="saveMenu()" style="margin-top:6px">💾 Guardar menú</button>
+  </div>
+</div>
+
+<div class="section" id="tab-hoy">
+  <div class="card">
+    <div class="card-title">☀️ ¿Qué comiste hoy?</div>
+    <div class="section-label">Selecciona el día</div>
+    <div class="today-day-selector" id="day-selector"></div>
+    <div id="today-menu-content"></div>
+  </div>
+</div>
+
+<div class="section" id="tab-cena">
+  <div id="suggestion-area">
+    <div class="empty-state">
+      <span class="empty-icon">🌙</span>
+      <p>Ve a <strong>Hoy comí</strong>, selecciona lo que comiste y te sugerimos la cena perfecta con lo que tienes en casa.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" id="tab-historial">
+  <div class="card">
+    <div class="card-title">📅 Historial de cenas</div>
+    <div id="history-list">
+      <div class="empty-state">
+        <span class="empty-icon">📋</span>
+        <p>Aún no hay cenas registradas.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://qfkalfdmoklpfmtfgyfo.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFma2FsZmRtb2tscGZtdGZneWZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NzMxNTcsImV4cCI6MjA5MzI0OTE1N30.QQBd1fAuB01f8YjLnGQC-RR-xDTav8fD5Byk3kxqO_g';
+
+const T_INGREDIENTS = 'cenas_ingredients';
+const T_MENU        = 'cenas_weekly_menu';
+const T_HISTORY     = 'cenas_dinner_history';
+
+const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes'];
+const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const WEEKDAYS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+const state = {
+  ingredients: [
+    'Brotes verdes','Lechuga','Tomate','Mozzarella fresca',
+    'Jamón serrano','Atún en aceite','Caballa en tomate',
+    'Sardinillas en tomate','Mejillones en escabeche','Berberechos',
+    'Champiñones lata','Huevos','Pechuga de pollo',
+    'Tortitas integrales','Salsa de fajitas','Pimiento congelado',
+    'Cebolla congelada','Guacamole','Zanahoria','Yogur natural',
+    'Pan integral','Biscotes integrales'
+  ],
+  weekMenu: {
+    Lunes:     { p1: ['','',''], p2: ['','',''] },
+    Martes:    { p1: ['','',''], p2: ['','',''] },
+    Miércoles: { p1: ['','',''], p2: ['','',''] },
+    Jueves:    { p1: ['','',''], p2: ['','',''] },
+    Viernes:   { p1: ['','',''], p2: ['','',''] },
+  },
+  todaySelections: { day: null, p1: null, p2: null },
+  history: [],
+  currentSuggestion: null
+};
+
+const recipes = [
+  {
+    emoji: '🥗',
+    name: 'Ensalada de brotes con caballa',
+    desc: 'Brotes verdes, caballa en tomate, mozzarella y jamón serrano. Sin aliñar, la caballa ya aporta el sabor.',
+    time: '2 min',
+    needs: ['Brotes verdes','Caballa en tomate','Mozzarella fresca','Jamón serrano'],
+    avoidProteins: ['pescado','merluza','lenguado','bacalao','sardina','atún','caballa','boquerón','cazón','emperador','rape'],
+    preferWhen: ['contundente','legumbre','cocido','fabada','estofada']
+  },
+  {
+    emoji: '🌯',
+    name: 'Wrap de pollo con pimiento',
+    desc: 'Pechuga a la plancha, pimiento y cebolla congelado salteado, salsa de fajitas en tortita integral.',
+    time: '10 min',
+    needs: ['Pechuga de pollo','Tortitas integrales','Pimiento congelado','Salsa de fajitas'],
+    avoidProteins: ['pollo','pechuga','nugget','alita'],
+    preferWhen: ['carne roja','contra','chuleta','hamburguesa','costilla']
+  },
+  {
+    emoji: '🐟',
+    name: 'Ensalada con atún y tomate',
+    desc: 'Lechuga, atún en aceite y tomate fresco. Ligera y sin cocinar.',
+    time: '3 min',
+    needs: ['Lechuga','Atún en aceite','Tomate'],
+    avoidProteins: ['pescado','merluza','lenguado','bacalao','sardina','atún','caballa'],
+    preferWhen: ['legumbre','cocido','fabada','contundente']
+  },
+  {
+    emoji: '🍳',
+    name: 'Revuelto de champiñones y jamón',
+    desc: '2 huevos revueltos con champiñones de lata y tiras de jamón serrano. Rápido y sabroso.',
+    time: '5 min',
+    needs: ['Huevos','Champiñones lata','Jamón serrano'],
+    avoidProteins: ['huevo','tortilla','revuelto'],
+    preferWhen: ['pollo','carne','chuleta']
+  },
+  {
+    emoji: '🦪',
+    name: 'Mejillones con biscotes',
+    desc: 'Mejillones en escabeche sobre biscotes integrales. Cena mínima para noches de cansancio.',
+    time: '1 min',
+    needs: ['Mejillones en escabeche','Biscotes integrales'],
+    avoidProteins: ['pescado','merluza','lenguado','bacalao','sardina'],
+    preferWhen: ['carne','legumbre','cocido','contundente']
+  },
+  {
+    emoji: '🥑',
+    name: 'Tostadas con guacamole y jamón',
+    desc: 'Pan integral tostado con guacamole y lonchas de jamón serrano.',
+    time: '3 min',
+    needs: ['Pan integral','Guacamole','Jamón serrano'],
+    avoidProteins: [],
+    preferWhen: ['pescado','pollo','legumbre']
+  },
+  {
+    emoji: '🐟',
+    name: 'Sardinillas calientes con tostada',
+    desc: 'Sardinillas en tomate calentadas 2 minutos, sobre tostada integral.',
+    time: '4 min',
+    needs: ['Sardinillas en tomate','Pan integral'],
+    avoidProteins: ['pescado','merluza','bacalao','sardina','caballa'],
+    preferWhen: ['carne','pollo','legumbre']
+  }
+];
+
+async function sbFetch(path, method = 'GET', body = null) {
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json'
+  };
+  if (method === 'POST' || method === 'PATCH') headers['Prefer'] = 'return=representation';
+  const opts = { method, headers };
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, opts);
+    if (!res.ok) {
+      const text = await res.text();
+      console.error(`Supabase ${method} ${path}:`, res.status, text);
+      showToast(`Error ${res.status}: ${text.slice(0,80)}`, true);
+      return null;
+    }
+    if (res.status === 204) return [];
+    return await res.json();
+  } catch (e) {
+    console.error('Fetch error:', e);
+    showToast('Error de red', true);
+    return null;
+  }
+}
+
+async function loadFromSupabase() {
+  const ings = await sbFetch(`${T_INGREDIENTS}?select=name&order=id`);
+  if (Array.isArray(ings) && ings.length) state.ingredients = ings.map(i => i.name);
+
+  const menu = await sbFetch(`${T_MENU}?select=*&order=id`);
+  if (Array.isArray(menu) && menu.length) {
+    menu.forEach(row => {
+      if (state.weekMenu[row.day]) {
+        state.weekMenu[row.day].p1 = [row.p1a||'', row.p1b||'', row.p1c||''];
+        state.weekMenu[row.day].p2 = [row.p2a||'', row.p2b||'', row.p2c||''];
+      }
+    });
+  }
+
+  const hist = await sbFetch(`${T_HISTORY}?select=*&order=created_at.desc&limit=30`);
+  if (Array.isArray(hist) && hist.length) {
+    state.history = hist.map(h => {
+      const d = new Date(h.created_at);
+      return {
+        day: d.getDate(),
+        month: MONTHS[d.getMonth()],
+        year: d.getFullYear(),
+        dinner: h.dinner,
+        lunch: h.lunch
+      };
+    });
+  }
+}
+
+async function saveIngredientsToSupabase() {
+  await sbFetch(`${T_INGREDIENTS}?id=gt.0`, 'DELETE');
+  if (state.ingredients.length) {
+    await sbFetch(T_INGREDIENTS, 'POST', state.ingredients.map(name => ({ name })));
+  }
+}
+
+async function saveMenuToSupabase() {
+  for (const day of DAYS) {
+    const m = state.weekMenu[day];
+    const payload = {
+      day,
+      p1a: m.p1[0], p1b: m.p1[1], p1c: m.p1[2],
+      p2a: m.p2[0], p2b: m.p2[1], p2c: m.p2[2]
+    };
+    const existing = await sbFetch(`${T_MENU}?day=eq.${encodeURIComponent(day)}&select=id`);
+    if (Array.isArray(existing) && existing.length) {
+      await sbFetch(`${T_MENU}?day=eq.${encodeURIComponent(day)}`, 'PATCH', payload);
+    } else {
+      await sbFetch(T_MENU, 'POST', payload);
+    }
+  }
+}
+
+async function saveDinnerToSupabase(dinner, lunch) {
+  return sbFetch(T_HISTORY, 'POST', { dinner, lunch });
+}
+
+function setDate() {
+  const now = new Date();
+  document.getElementById('today-day').textContent = WEEKDAYS[now.getDay()];
+  document.getElementById('today-date').textContent = `${now.getDate()} ${MONTHS[now.getMonth()]}`;
+}
+
+function showTab(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'hoy') renderTodayTab();
+}
+
+function renderIngredients() {
+  const grid = document.getElementById('ingredient-grid');
+  grid.innerHTML = '';
+  state.ingredients.forEach((ing, i) => {
+    const tag = document.createElement('div');
+    tag.className = 'ingredient-tag';
+    const text = document.createTextNode(ing + ' ');
+    const btn = document.createElement('span');
+    btn.className = 'remove-btn';
+    btn.textContent = '×';
+    btn.onclick = () => removeIngredient(i);
+    tag.appendChild(text);
+    tag.appendChild(btn);
+    grid.appendChild(tag);
+  });
+}
+
+function addIngredient() {
+  const input = document.getElementById('new-ingredient');
+  const val = input.value.trim();
+  if (val && !state.ingredients.includes(val)) {
+    state.ingredients.push(val);
+    renderIngredients();
+    saveIngredientsToSupabase();
+    showToast(`"${val}" añadido`);
+  }
+  input.value = '';
+}
+
+function removeIngredient(i) {
+  const name = state.ingredients[i];
+  state.ingredients.splice(i, 1);
+  renderIngredients();
+  saveIngredientsToSupabase();
+  showToast(`"${name}" eliminado`);
+}
+
+function renderMenuDays() {
+  const container = document.getElementById('menu-days');
+  container.innerHTML = '';
+  DAYS.forEach(day => {
+    const block = document.createElement('div');
+    block.className = 'day-block';
+    const m = state.weekMenu[day];
+    block.innerHTML = `
+      <div class="day-header-menu">
+        <span class="day-name-menu">${day}</span>
+      </div>
+      <div class="day-body">
+        <div class="plato-row"><span class="plato-label">1A</span><input class="plato-input" placeholder="Primer plato opción A" data-day="${day}" data-curso="p1" data-idx="0"></div>
+        <div class="plato-row"><span class="plato-label">1B</span><input class="plato-input" placeholder="Primer plato opción B" data-day="${day}" data-curso="p1" data-idx="1"></div>
+        <div class="plato-row"><span class="plato-label">1C</span><input class="plato-input" placeholder="Primer plato opción C" data-day="${day}" data-curso="p1" data-idx="2"></div>
+        <div class="plato-row" style="background:rgba(255,255,255,0.02)"><span class="plato-label">2A</span><input class="plato-input" placeholder="Segundo plato opción A" data-day="${day}" data-curso="p2" data-idx="0"></div>
+        <div class="plato-row" style="background:rgba(255,255,255,0.02)"><span class="plato-label">2B</span><input class="plato-input" placeholder="Segundo plato opción B" data-day="${day}" data-curso="p2" data-idx="1"></div>
+        <div class="plato-row" style="background:rgba(255,255,255,0.02)"><span class="plato-label">2C</span><input class="plato-input" placeholder="Segundo plato opción C" data-day="${day}" data-curso="p2" data-idx="2"></div>
+      </div>
+    `;
+    block.querySelectorAll('.plato-input').forEach(input => {
+      const { curso, idx } = input.dataset;
+      input.value = m[curso][parseInt(idx)] || '';
+      input.addEventListener('input', e => {
+        const { day, curso, idx } = e.target.dataset;
+        state.weekMenu[day][curso][parseInt(idx)] = e.target.value;
+      });
+    });
+    container.appendChild(block);
+  });
+}
+
+async function saveMenu() {
+  await saveMenuToSupabase();
+  showToast('✓ Menú guardado');
+  renderTodayTab();
+}
+
+function renderTodayTab() {
+  const selector = document.getElementById('day-selector');
+  selector.innerHTML = '';
+  DAYS.forEach(day => {
+    const pill = document.createElement('div');
+    pill.className = 'day-pill' + (state.todaySelections.day === day ? ' active' : '');
+    pill.textContent = day;
+    pill.onclick = () => selectDay(day);
+    selector.appendChild(pill);
+  });
+  const now = new Date();
+  const todayName = WEEKDAYS[now.getDay()];
+  if (!state.todaySelections.day && DAYS.includes(todayName)) {
+    selectDay(todayName);
+    return;
+  }
+  renderDayMenu();
+}
+
+function selectDay(day) {
+  state.todaySelections.day = day;
+  state.todaySelections.p1 = null;
+  state.todaySelections.p2 = null;
+  document.querySelectorAll('.day-pill').forEach(p => {
+    p.classList.toggle('active', p.textContent === day);
+  });
+  renderDayMenu();
+}
+
+function renderDayMenu() {
+  const content = document.getElementById('today-menu-content');
+  const day = state.todaySelections.day;
+  if (!day) { content.innerHTML = ''; return; }
+  const menu = state.weekMenu[day];
+  const p1Options = menu.p1.filter(p => p.trim());
+  const p2Options = menu.p2.filter(p => p.trim());
+  if (!p1Options.length && !p2Options.length) {
+    content.innerHTML = `<div class="empty-menu-msg">No hay menú introducido para <strong>${day}</strong>.<br>Ve a la pestaña <strong>Menú</strong> e introdúcelo.</div>`;
+    return;
+  }
+  content.innerHTML = '';
+  const renderGroup = (label, options, course) => {
+    const lbl = document.createElement('div');
+    lbl.className = 'plato-group-label';
+    lbl.textContent = label;
+    content.appendChild(lbl);
+    options.forEach(p => {
+      const sel = state.todaySelections[course] === p;
+      const opt = document.createElement('div');
+      opt.className = 'plato-option' + (sel ? ' selected' : '');
+      opt.innerHTML = `<div class="check">${sel?'✓':''}</div>`;
+      const span = document.createElement('span');
+      span.textContent = p;
+      opt.appendChild(span);
+      opt.onclick = () => selectPlato(course, p);
+      content.appendChild(opt);
+    });
+  };
+  if (p1Options.length) renderGroup('1er Plato', p1Options, 'p1');
+  if (p2Options.length) renderGroup('2º Plato',  p2Options, 'p2');
+  const wrapper = document.createElement('div');
+  wrapper.style.marginTop = '16px';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-full';
+  btn.textContent = '🌙 Ver sugerencia de cena';
+  btn.onclick = suggestDinner;
+  wrapper.appendChild(btn);
+  content.appendChild(wrapper);
+}
+
+function selectPlato(course, value) {
+  state.todaySelections[course] = value;
+  renderDayMenu();
+}
+
+function scoreRecipe(r, lunchText) {
+  let score = 10;
+  const hasAll = r.needs.every(n => state.ingredients.some(i => i.toLowerCase().includes(n.toLowerCase())));
+  if (!hasAll) score -= 8;
+  const shouldAvoid = r.avoidProteins.some(p => lunchText.includes(p));
+  if (shouldAvoid) score -= 15;
+  const preferred = r.preferWhen.some(k => lunchText.includes(k));
+  if (preferred) score += 8;
+  const recent = state.history.slice(0, 3).map(h => h.dinner);
+  if (recent.includes(r.name)) score -= 10;
+  return score;
+}
+
+function suggestDinner() {
+  const { p1, p2 } = state.todaySelections;
+  const lunchText = ((p1 || '') + ' ' + (p2 || '')).toLowerCase();
+  const scored = recipes.map(r => ({ ...r, score: scoreRecipe(r, lunchText) }));
+  scored.sort((a, b) => b.score - a.score);
+  const lunchSummary = [p1, p2].filter(Boolean).join(' + ') || 'Sin registro';
+  state.currentSuggestion = { recipe: scored[0], alternatives: scored.slice(1, 3), lunchSummary };
+  renderSuggestion();
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-cena').classList.add('active');
+  document.querySelectorAll('.tab')[3].classList.add('active');
+}
+
+function renderSuggestion() {
+  const s = state.currentSuggestion;
+  if (!s) return;
+  const { recipe: best, alternatives, lunchSummary } = s;
+  const area = document.getElementById('suggestion-area');
+  area.innerHTML = '';
+
+  const box = document.createElement('div');
+  box.className = 'suggestion-box';
+  box.innerHTML = `
+    <span class="suggestion-emoji">${best.emoji}</span>
+    <div class="suggestion-title"></div>
+    <div class="suggestion-desc"></div>
+    <div class="stags">
+      <span class="stag avoid">↓ Complementa tu comida</span>
+      <span class="stag">✓ Con lo que tienes</span>
+      <span class="stag">⏱ ${best.time}</span>
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted)">Comiste: <span style="color:var(--text)" class="lunch-text"></span></div>
+  `;
+  box.querySelector('.suggestion-title').textContent = best.name;
+  box.querySelector('.suggestion-desc').textContent = best.desc;
+  box.querySelector('.lunch-text').textContent = lunchSummary;
+  area.appendChild(box);
+
+  const ingCard = document.createElement('div');
+  ingCard.className = 'card';
+  ingCard.style.marginBottom = '10px';
+  const ingTitle = document.createElement('div');
+  ingTitle.className = 'card-title';
+  ingTitle.style.cssText = 'font-size:0.85rem;margin-bottom:10px';
+  ingTitle.textContent = '🛒 Ingredientes';
+  ingCard.appendChild(ingTitle);
+  best.needs.forEach(n => {
+    const have = state.ingredients.some(i => i.toLowerCase().includes(n.toLowerCase()));
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 0;font-size:0.83rem;border-bottom:1px solid var(--border)';
+    row.innerHTML = `<span style="color:${have?'var(--green)':'var(--red)'}">${have?'✓':'✗'}</span> `;
+    row.append(n);
+    ingCard.appendChild(row);
+  });
+  area.appendChild(ingCard);
+
+  if (alternatives.length) {
+    const altCard = document.createElement('div');
+    altCard.className = 'card';
+    altCard.style.marginBottom = '10px';
+    const altTitle = document.createElement('div');
+    altTitle.className = 'card-title';
+    altTitle.style.cssText = 'font-size:0.85rem;margin-bottom:10px';
+    altTitle.textContent = '↻ Alternativas';
+    altCard.appendChild(altTitle);
+    alternatives.forEach(r => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer';
+      row.innerHTML = `<span style="font-size:1.2rem">${r.emoji}</span><div><div style="font-size:0.85rem;font-weight:500"></div><div style="font-size:0.75rem;color:var(--muted)">⏱ ${r.time}</div></div>`;
+      row.querySelector('div > div').textContent = r.name;
+      row.onclick = () => selectAlternative(r.name);
+      altCard.appendChild(row);
+    });
+    area.appendChild(altCard);
+  }
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn btn-full';
+  saveBtn.textContent = '✓ Guardar en historial';
+  saveBtn.onclick = () => saveDinner();
+  area.appendChild(saveBtn);
+}
+
+function selectAlternative(name) {
+  const s = state.currentSuggestion;
+  if (!s) return;
+  const newBest = [s.recipe, ...s.alternatives].find(r => r.name === name);
+  if (!newBest) return;
+  const pool = [s.recipe, ...s.alternatives].filter(r => r.name !== name);
+  state.currentSuggestion = {
+    recipe: newBest,
+    alternatives: pool.slice(0, 2),
+    lunchSummary: s.lunchSummary
+  };
+  renderSuggestion();
+}
+
+async function saveDinner() {
+  const s = state.currentSuggestion;
+  if (!s) return;
+  const now = new Date();
+  state.history.unshift({
+    day: now.getDate(),
+    month: MONTHS[now.getMonth()],
+    year: now.getFullYear(),
+    dinner: s.recipe.name,
+    lunch: s.lunchSummary
+  });
+  await saveDinnerToSupabase(s.recipe.name, s.lunchSummary);
+  renderHistory();
+  showToast('✓ Cena guardada en el historial');
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!state.history.length) {
+    list.innerHTML = `<div class="empty-state"><span class="empty-icon">📋</span><p>Aún no hay cenas registradas.</p></div>`;
+    return;
+  }
+  const currentYear = new Date().getFullYear();
+  list.innerHTML = '';
+  state.history.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const showYear = h.year && h.year !== currentYear;
+    item.innerHTML = `
+      <div class="history-date">
+        <div class="hday"></div>
+        <div class="hmon"></div>
+      </div>
+      <div class="history-content">
+        <div class="history-meal"></div>
+        <div class="history-lunch"></div>
+      </div>
+    `;
+    item.querySelector('.hday').textContent = h.day;
+    item.querySelector('.hmon').textContent = showYear ? `${h.month} ${String(h.year).slice(2)}` : h.month;
+    item.querySelector('.history-meal').textContent = h.dinner;
+    item.querySelector('.history-lunch').textContent = `Comida: ${h.lunch}`;
+    list.appendChild(item);
+  });
+}
+
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', isError);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function init() {
+  setDate();
+  renderIngredients();
+  renderMenuDays();
+  renderHistory();
+  await loadFromSupabase();
+  renderIngredients();
+  renderMenuDays();
+  renderHistory();
+}
+
+init();
+</script>
+</body>
+</html>
