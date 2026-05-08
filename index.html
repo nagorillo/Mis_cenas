@@ -375,6 +375,29 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.error { background: var(--red); color: white; }
+
+  .icon-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .icon-btn:hover { color: var(--accent); background: var(--surface2); }
+  .icon-btn.danger:hover { color: var(--red); }
+  .history-actions { display: flex; gap: 2px; align-items: flex-start; }
+  .history-edit { margin-top: 6px; }
+  .history-edit .form-input { margin-bottom: 6px; font-size: 0.82rem; padding: 8px 12px; }
+  .history-edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .history-edit-actions .btn { padding: 6px 12px; font-size: 0.78rem; }
+  .free-text-area {
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+  }
 </style>
 </head>
 <body>
@@ -493,7 +516,7 @@ const state = {
     Jueves:    { p1: ['','',''], p2: ['','',''] },
     Viernes:   { p1: ['','',''], p2: ['','',''] },
   },
-  todaySelections: { day: null, p1: null, p2: null },
+  todaySelections: { day: null, p1: null, p2: null, freeText: '' },
   history: [],
   currentSuggestion: null
 };
@@ -609,6 +632,7 @@ async function loadFromSupabase() {
     state.history = hist.map(h => {
       const d = new Date(h.created_at);
       return {
+        id: h.id,
         day: d.getDate(),
         month: MONTHS[d.getMonth()],
         year: d.getFullYear(),
@@ -645,6 +669,14 @@ async function saveMenuToSupabase() {
 
 async function saveDinnerToSupabase(dinner, lunch) {
   return sbFetch(T_HISTORY, 'POST', { dinner, lunch });
+}
+
+async function deleteDinnerFromSupabase(id) {
+  return sbFetch(`${T_HISTORY}?id=eq.${id}`, 'DELETE');
+}
+
+async function updateDinnerInSupabase(id, dinner, lunch) {
+  return sbFetch(`${T_HISTORY}?id=eq.${id}`, 'PATCH', { dinner, lunch });
 }
 
 function setDate() {
@@ -768,34 +800,59 @@ function selectDay(day) {
 function renderDayMenu() {
   const content = document.getElementById('today-menu-content');
   const day = state.todaySelections.day;
-  if (!day) { content.innerHTML = ''; return; }
-  const menu = state.weekMenu[day];
-  const p1Options = menu.p1.filter(p => p.trim());
-  const p2Options = menu.p2.filter(p => p.trim());
-  if (!p1Options.length && !p2Options.length) {
-    content.innerHTML = `<div class="empty-menu-msg">No hay menú introducido para <strong>${day}</strong>.<br>Ve a la pestaña <strong>Menú</strong> e introdúcelo.</div>`;
-    return;
-  }
   content.innerHTML = '';
-  const renderGroup = (label, options, course) => {
-    const lbl = document.createElement('div');
-    lbl.className = 'plato-group-label';
-    lbl.textContent = label;
-    content.appendChild(lbl);
-    options.forEach(p => {
-      const sel = state.todaySelections[course] === p;
-      const opt = document.createElement('div');
-      opt.className = 'plato-option' + (sel ? ' selected' : '');
-      opt.innerHTML = `<div class="check">${sel?'✓':''}</div>`;
-      const span = document.createElement('span');
-      span.textContent = p;
-      opt.appendChild(span);
-      opt.onclick = () => selectPlato(course, p);
-      content.appendChild(opt);
-    });
-  };
-  if (p1Options.length) renderGroup('1er Plato', p1Options, 'p1');
-  if (p2Options.length) renderGroup('2º Plato',  p2Options, 'p2');
+
+  if (day) {
+    const menu = state.weekMenu[day];
+    const p1Options = menu.p1.filter(p => p.trim());
+    const p2Options = menu.p2.filter(p => p.trim());
+    if (!p1Options.length && !p2Options.length) {
+      const msg = document.createElement('div');
+      msg.className = 'empty-menu-msg';
+      msg.innerHTML = `No hay menú introducido para <strong>${day}</strong>.<br>Puedes escribir tu comida abajo.`;
+      content.appendChild(msg);
+    } else {
+      const renderGroup = (label, options, course) => {
+        const lbl = document.createElement('div');
+        lbl.className = 'plato-group-label';
+        lbl.textContent = label;
+        content.appendChild(lbl);
+        options.forEach(p => {
+          const sel = state.todaySelections[course] === p;
+          const opt = document.createElement('div');
+          opt.className = 'plato-option' + (sel ? ' selected' : '');
+          opt.innerHTML = `<div class="check">${sel?'✓':''}</div>`;
+          const span = document.createElement('span');
+          span.textContent = p;
+          opt.appendChild(span);
+          opt.onclick = () => selectPlato(course, p);
+          content.appendChild(opt);
+        });
+      };
+      if (p1Options.length) renderGroup('1er Plato', p1Options, 'p1');
+      if (p2Options.length) renderGroup('2º Plato',  p2Options, 'p2');
+    }
+  } else {
+    const hint = document.createElement('div');
+    hint.className = 'empty-menu-msg';
+    hint.textContent = 'Selecciona un día arriba o escribe directamente lo que comiste abajo.';
+    content.appendChild(hint);
+  }
+
+  const freeLabel = document.createElement('div');
+  freeLabel.className = 'plato-group-label';
+  freeLabel.textContent = '✏️ Comida libre (modificación o fuera de la academia)';
+  content.appendChild(freeLabel);
+  const ta = document.createElement('textarea');
+  ta.className = 'form-input free-text-area';
+  ta.rows = 2;
+  ta.placeholder = 'Ej: Pollo con arroz, paella en casa...';
+  ta.value = state.todaySelections.freeText || '';
+  ta.addEventListener('input', e => {
+    state.todaySelections.freeText = e.target.value;
+  });
+  content.appendChild(ta);
+
   const wrapper = document.createElement('div');
   wrapper.style.marginTop = '16px';
   const btn = document.createElement('button');
@@ -825,11 +882,14 @@ function scoreRecipe(r, lunchText) {
 }
 
 function suggestDinner() {
-  const { p1, p2 } = state.todaySelections;
-  const lunchText = ((p1 || '') + ' ' + (p2 || '')).toLowerCase();
+  const { p1, p2, freeText } = state.todaySelections;
+  const ft = (freeText || '').trim();
+  const lunchText = ((p1 || '') + ' ' + (p2 || '') + ' ' + ft).toLowerCase();
   const scored = recipes.map(r => ({ ...r, score: scoreRecipe(r, lunchText) }));
   scored.sort((a, b) => b.score - a.score);
-  const lunchSummary = [p1, p2].filter(Boolean).join(' + ') || 'Sin registro';
+  const parts = [p1, p2].filter(Boolean);
+  if (ft) parts.push(ft);
+  const lunchSummary = parts.join(' + ') || 'Sin registro';
   state.currentSuggestion = { recipe: scored[0], alternatives: scored.slice(1, 3), lunchSummary };
   renderSuggestion();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -925,15 +985,17 @@ function selectAlternative(name) {
 async function saveDinner() {
   const s = state.currentSuggestion;
   if (!s) return;
-  const now = new Date();
+  const result = await saveDinnerToSupabase(s.recipe.name, s.lunchSummary);
+  const row = Array.isArray(result) ? result[0] : null;
+  const d = row?.created_at ? new Date(row.created_at) : new Date();
   state.history.unshift({
-    day: now.getDate(),
-    month: MONTHS[now.getMonth()],
-    year: now.getFullYear(),
+    id: row?.id,
+    day: d.getDate(),
+    month: MONTHS[d.getMonth()],
+    year: d.getFullYear(),
     dinner: s.recipe.name,
     lunch: s.lunchSummary
   });
-  await saveDinnerToSupabase(s.recipe.name, s.lunchSummary);
   renderHistory();
   showToast('✓ Cena guardada en el historial');
 }
@@ -956,14 +1018,71 @@ function renderHistory() {
         <div class="hmon"></div>
       </div>
       <div class="history-content">
-        <div class="history-meal"></div>
-        <div class="history-lunch"></div>
+        <div class="history-view">
+          <div class="history-meal"></div>
+          <div class="history-lunch"></div>
+        </div>
+        <div class="history-edit" hidden>
+          <input class="form-input" data-field="dinner" placeholder="Cena">
+          <input class="form-input" data-field="lunch" placeholder="Comida">
+          <div class="history-edit-actions">
+            <button class="btn" data-action="save">Guardar</button>
+            <button class="btn btn-outline" data-action="cancel">Cancelar</button>
+          </div>
+        </div>
+      </div>
+      <div class="history-actions">
+        <button class="icon-btn" data-action="edit" title="Editar">✎</button>
+        <button class="icon-btn danger" data-action="delete" title="Eliminar">🗑</button>
       </div>
     `;
     item.querySelector('.hday').textContent = h.day;
     item.querySelector('.hmon').textContent = showYear ? `${h.month} ${String(h.year).slice(2)}` : h.month;
     item.querySelector('.history-meal').textContent = h.dinner;
-    item.querySelector('.history-lunch').textContent = `Comida: ${h.lunch}`;
+    item.querySelector('.history-lunch').textContent = `Comida: ${h.lunch || ''}`;
+
+    const view = item.querySelector('.history-view');
+    const editBox = item.querySelector('.history-edit');
+    const dinnerInput = editBox.querySelector('input[data-field="dinner"]');
+    const lunchInput = editBox.querySelector('input[data-field="lunch"]');
+    const actions = item.querySelector('.history-actions');
+
+    if (!h.id) {
+      actions.hidden = true;
+    } else {
+      item.querySelector('[data-action="edit"]').onclick = () => {
+        dinnerInput.value = h.dinner || '';
+        lunchInput.value = h.lunch || '';
+        view.hidden = true;
+        editBox.hidden = false;
+        actions.hidden = true;
+        dinnerInput.focus();
+      };
+      item.querySelector('[data-action="cancel"]').onclick = () => {
+        view.hidden = false;
+        editBox.hidden = true;
+        actions.hidden = false;
+      };
+      item.querySelector('[data-action="save"]').onclick = async () => {
+        const newDinner = dinnerInput.value.trim();
+        const newLunch = lunchInput.value.trim();
+        if (!newDinner) { showToast('La cena no puede estar vacía', true); return; }
+        const result = await updateDinnerInSupabase(h.id, newDinner, newLunch);
+        if (result === null) return;
+        h.dinner = newDinner;
+        h.lunch = newLunch;
+        renderHistory();
+        showToast('✓ Cena actualizada');
+      };
+      item.querySelector('[data-action="delete"]').onclick = async () => {
+        if (!confirm(`¿Eliminar "${h.dinner}"?`)) return;
+        const result = await deleteDinnerFromSupabase(h.id);
+        if (result === null) return;
+        state.history = state.history.filter(x => x.id !== h.id);
+        renderHistory();
+        showToast('Cena eliminada');
+      };
+    }
     list.appendChild(item);
   });
 }
